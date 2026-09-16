@@ -1,4 +1,4 @@
-name: Mantener footer universal Te Equipamos
+name: Mantener identidad universal Te Equipamos
 
 on:
   push:
@@ -9,32 +9,42 @@ permissions:
   contents: write
 
 jobs:
-  footer:
+  identidad:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Asegurar loader del footer universal
+      - name: Asegurar identidad universal y compatibilidad visual
         run: |
           python - <<'PY'
           from pathlib import Path
           path = Path('index.html')
-          tag = '<script defer src="https://jorgesport.github.io/te-equipamos/universal-footer.js" data-te-universal-footer-loader></script>'
+          loader = '<script defer src="https://jorgesport.github.io/te-equipamos/universal-footer.js" data-te-universal-footer-loader></script>'
+          compat = '<style id="teUniversalBrandCompat">.nav a.te-universal-brand-link{background:transparent!important;color:inherit!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;min-height:0!important}.nav a.te-universal-brand-link:hover{background:transparent!important}</style>'
           if not path.exists():
               raise SystemExit('No existe index.html en la raíz')
           html = path.read_text(encoding='utf-8')
+          changed = False
           if 'data-te-universal-footer-loader' not in html:
               if '</body>' not in html:
                   raise SystemExit('No se encontró </body>')
-              path.write_text(html.replace('</body>', tag + '</body>', 1), encoding='utf-8')
+              html = html.replace('</body>', loader + '</body>', 1)
+              changed = True
+          if 'teUniversalBrandCompat' not in html:
+              if '</head>' not in html:
+                  raise SystemExit('No se encontró </head>')
+              html = html.replace('</head>', compat + '</head>', 1)
+              changed = True
+          if changed:
+              path.write_text(html, encoding='utf-8')
           PY
       - name: Guardar solo si hubo cambios
         run: |
           if git diff --quiet; then
-            echo "Footer universal ya presente"
+            echo "Identidad universal ya presente"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Aplicar footer universal de Te Equipamos"
+          git commit -m "Corregir logo universal de Te Equipamos"
           git push
